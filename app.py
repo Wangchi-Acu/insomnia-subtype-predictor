@@ -14,12 +14,10 @@ from src.predict import predict
 # ==================== 加载模型与元数据 ====================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Pipeline（StandardScaler + LogReg）
 PIPELINE = joblib.load(os.path.join(BASE_DIR, 'model', 'model.pkl'))
 SCALER = PIPELINE.named_steps['scaler']
 MODEL = PIPELINE.named_steps['model']
 
-# 模型系数（多分类 shape: n_classes × n_features）
 COEF = MODEL.coef_
 
 with open(os.path.join(BASE_DIR, 'model', 'feature_names.json'), 'r', encoding='utf-8') as f:
@@ -28,11 +26,9 @@ with open(os.path.join(BASE_DIR, 'model', 'feature_names.json'), 'r', encoding='
 with open(os.path.join(BASE_DIR, 'model', 'class_labels.json'), 'r', encoding='utf-8') as f:
     CLASS_INFO = json.load(f)
 
-# 训练分布统计（用于漂移检测）
 train_stats_path = os.path.join(BASE_DIR, 'model', 'train_stats.json')
 TRAIN_STATS = pd.read_json(train_stats_path) if os.path.exists(train_stats_path) else None
 
-# SHAP 背景数据
 background_path = os.path.join(BASE_DIR, 'model', 'background.npy')
 BACKGROUND = np.load(background_path) if os.path.exists(background_path) else None
 
@@ -83,7 +79,6 @@ with st.sidebar:
 st.title("失眠症患者亚型预测平台")
 st.caption("Insomnia Subtype Classification via Resting-State EEG Functional Connectivity")
 
-# 文件上传
 uploaded_file = st.file_uploader(
     "📤 上传待预测数据（.xlsx 或 .csv）",
     type=["xlsx", "csv"],
@@ -91,7 +86,7 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-    # -------------------- 读取数据 --------------------
+    # -------------------- 读取与预测 --------------------
     try:
         if uploaded_file.name.endswith('.csv'):
             df_raw = pd.read_csv(uploaded_file)
@@ -101,7 +96,6 @@ if uploaded_file is not None:
         st.error(f"文件读取失败：{e}")
         st.stop()
 
-    # -------------------- 预处理与预测 --------------------
     with st.spinner("正在进行特征对齐、标准化与模型推理..."):
         try:
             X_processed, row_ids = preprocess_input(df_raw)
@@ -121,39 +115,45 @@ if uploaded_file is not None:
     })
     for i, name in enumerate(class_names):
         result_df[f'Prob_{name}'] = np.round(proba[:, i], 4)
-    result_df['Max_Prob'] = result_df[[f'Prob_{c}' for c in class_names]].max(axis=1)
 
-    # -------------------- 全局结果表格（隐藏 Sample_ID 和 Max_Prob） --------------------
-    st.markdown("---")
-    st.subheader("📊 预测结果总表")
-    
+    # 用于显示的列（隐藏 Sample_ID 和 Max_Prob）
     display_cols = [c for c in result_df.columns if c not in ['Sample_ID', 'Max_Prob']]
-    try:
-        st.dataframe(
-            result_df[display_cols].style.background_gradient(
+
+    # -------------------- 并排布局：表格 + SHAP + 漂移 --------------------
+    st.markdown("---")
+    st.subheader("📊 预测结果与单样本解析")
+
+    col_table, col_shap, col_drift = st.columns([1.5, 1, 1])
+
+    # ===== 左侧：预测结果总表 + 样本选择器 =====
+    with col_table:
+        st.markdown("#### 预测结果总表")
+
+        format_dict = {f'Prob_{c}': "{:.2%}" for c in class_names}
+        try:
+            styled = result_df[display_cols].style.background_gradient(
                 subset=[f'Prob_{c}' for c in class_names],
                 cmap='YlGnBu',
                 vmin=0, vmax=1
-            ),
-            use_container_width=True,
-            height=min(400, 35 * len(result_df) + 50)
-        )
-    except Exception:
-        st.dataframe(result_df[display_cols], use_container_width=True)
+            ).format(format_dict)
+            st.dataframe(
+                styled,
+                use_container_width=True,
+                height=min(400, 35 * len(result_df) + 50)
+            )
+        except Exception:
+            st.dataframe(result_df[display_cols], use_container_width=True)
 
-    # -------------------- 单样本深度解析（三栏同步展示） --------------------
-    st.markdown("---")
-    st.subheader("🔬 单样本深度解析")
+        st.markdown("---")
+        selected_idx = st.selectbox("选择样本查看详情", result_df['Sample_ID'].tolist())
 
-    selected_idx = st.selectbox("选择样本查看详情", result_df['Sample_ID'].tolist())
+    # 根据选中样本预计算公共变量
     sample_pos = row_ids.index(selected_idx)
     pred_label = int(result_df[result_df['Sample_ID'] == selected_idx]['Predicted_Label'].values[0])
-    
-    # 原始特征与标准化特征
     x_raw = X_processed[sample_pos].copy()
     x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
 
-    # 预计算 SHAP
+    # SHAP 预计算
     sv = None
     if BACKGROUND is not None:
         try:
@@ -162,24 +162,18 @@ if uploaded_file is not None:
         except Exception:
             pass
 
-    # 预计算漂移
+    # 漂移预计算
     z_scores = None
     if TRAIN_STATS is not None:
         means = TRAIN_STATS['mean'].values
         stds = TRAIN_STATS['std'].values
         z_scores = (x_raw - means) / stds
 
-    # ===== 三栏同步展示 =====
-    c1, c2, c3 = st.columns(3)
+    # ===== 中栏：SHAP 解释 =====
+    with col_shap:
+        st.markdown(f"**{class_names[pred_label]}**")
+        st.caption("SHAP 特征贡献")
 
-    with c1:
-        st.markdown("#### 📊 概率概览")
-        for i, name in enumerate(class_names):
-            prob = result_df[result_df['Sample_ID'] == selected_idx][f'Prob_{name}'].values[0]
-            st.metric(label=name, value=f"{prob:.1%}")
-
-    with c2:
-        st.markdown("#### 🔍 SHAP 解释")
         if sv is not None:
             exp = shap.Explanation(
                 values=sv.values[0, :, pred_label],
@@ -193,16 +187,23 @@ if uploaded_file is not None:
             st.pyplot(fig)
             plt.close(fig)
         else:
-            st.warning("未找到背景数据文件 (background.npy)")
+            st.warning("未找到背景数据")
 
-    with c3:
-        st.markdown("#### ⚖️ 数据漂移")
+    # ===== 右栏：数据漂移 =====
+    with col_drift:
+        st.markdown(f"**{class_names[pred_label]}**")
+        st.caption("数据漂移检测")
+
         if z_scores is not None:
             fig, ax = plt.subplots(figsize=(5, 5))
             colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
                       for z in z_scores]
-            ax.barh(range(len(FEATURE_NAMES)), z_scores, color=colors, 
-                    edgecolor='black', linewidth=0.5)
+            ax.barh(
+                range(len(FEATURE_NAMES)),
+                z_scores,
+                color=colors,
+                alpha=0.7
+            )
             ax.set_yticks(range(len(FEATURE_NAMES)))
             ax.set_yticklabels(FEATURE_NAMES, fontsize=8)
             ax.invert_yaxis()
@@ -223,6 +224,7 @@ if uploaded_file is not None:
             st.info("无训练统计")
 
     # -------------------- 下方明细表（可折叠） --------------------
+    st.markdown("---")
     if sv is not None:
         with st.expander("📋 查看 SHAP 数值明细与模型系数"):
             shap_df = pd.DataFrame({
