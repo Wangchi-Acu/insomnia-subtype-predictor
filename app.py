@@ -19,9 +19,8 @@ PIPELINE = joblib.load(os.path.join(BASE_DIR, 'model', 'model.pkl'))
 SCALER = PIPELINE.named_steps['scaler']
 MODEL = PIPELINE.named_steps['model']
 
-# 模型系数与截距（多分类 shape: n_classes × n_features）
+# 模型系数（多分类 shape: n_classes × n_features）
 COEF = MODEL.coef_
-INTERCEPT = MODEL.intercept_
 
 with open(os.path.join(BASE_DIR, 'model', 'feature_names.json'), 'r', encoding='utf-8') as f:
     FEATURE_NAMES = json.load(f)
@@ -33,7 +32,7 @@ with open(os.path.join(BASE_DIR, 'model', 'class_labels.json'), 'r', encoding='u
 train_stats_path = os.path.join(BASE_DIR, 'model', 'train_stats.json')
 TRAIN_STATS = pd.read_json(train_stats_path) if os.path.exists(train_stats_path) else None
 
-# SHAP 背景数据（标准化后的训练样本，用于定义基线）
+# SHAP 背景数据
 background_path = os.path.join(BASE_DIR, 'model', 'background.npy')
 BACKGROUND = np.load(background_path) if os.path.exists(background_path) else None
 
@@ -84,15 +83,6 @@ with st.sidebar:
 st.title("失眠症患者亚型预测平台")
 st.caption("Insomnia Subtype Classification via Resting-State EEG Functional Connectivity")
 
-# 免责声明
-with st.expander("⚠️ 免责声明（点击展开）", expanded=False):
-    st.markdown("""
-    <div style="padding:15px;border-radius:8px;background-color:#fff3e0;border-left:5px solid #f57c00;">
-    <b>本工具仅供科研参考，不替代临床诊断。</b><br>
-    预测结果基于机器学习模型，实际临床决策需结合医生专业判断。
-    </div>
-    """, unsafe_allow_html=True)
-
 # 文件上传
 uploaded_file = st.file_uploader(
     "📤 上传待预测数据（.xlsx 或 .csv）",
@@ -110,8 +100,6 @@ if uploaded_file is not None:
     except Exception as e:
         st.error(f"文件读取失败：{e}")
         st.stop()
-
-    st.success(f"✅ 成功读取 {len(df_raw)} 行 × {df_raw.shape[1]} 列")
 
     # -------------------- 预处理与预测 --------------------
     with st.spinner("正在进行特征对齐、标准化与模型推理..."):
@@ -135,13 +123,14 @@ if uploaded_file is not None:
         result_df[f'Prob_{name}'] = np.round(proba[:, i], 4)
     result_df['Max_Prob'] = result_df[[f'Prob_{c}' for c in class_names]].max(axis=1)
 
-    # -------------------- 全局结果表格 --------------------
+    # -------------------- 全局结果表格（隐藏 Sample_ID 和 Max_Prob） --------------------
     st.markdown("---")
     st.subheader("📊 预测结果总表")
     
+    display_cols = [c for c in result_df.columns if c not in ['Sample_ID', 'Max_Prob']]
     try:
         st.dataframe(
-            result_df.style.background_gradient(
+            result_df[display_cols].style.background_gradient(
                 subset=[f'Prob_{c}' for c in class_names],
                 cmap='YlGnBu',
                 vmin=0, vmax=1
@@ -150,9 +139,9 @@ if uploaded_file is not None:
             height=min(400, 35 * len(result_df) + 50)
         )
     except Exception:
-        st.dataframe(result_df, use_container_width=True)
+        st.dataframe(result_df[display_cols], use_container_width=True)
 
-    # -------------------- 单样本深度解析 --------------------
+    # -------------------- 单样本深度解析（三栏同步展示） --------------------
     st.markdown("---")
     st.subheader("🔬 单样本深度解析")
 
@@ -160,62 +149,92 @@ if uploaded_file is not None:
     sample_pos = row_ids.index(selected_idx)
     pred_label = int(result_df[result_df['Sample_ID'] == selected_idx]['Predicted_Label'].values[0])
     
-    # 原始特征值（来自 preprocess_input 的输出，尚未标准化）
+    # 原始特征与标准化特征
     x_raw = X_processed[sample_pos].copy()
-    # 标准化后的特征值（与 SHAP 背景数据同空间）
     x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
 
-    tab1, tab2, tab3 = st.tabs(["📊 概率概览", "🔍 SHAP 解释", "⚖️ 数据漂移"])
-
-    # ===== Tab 1: 概率概览 =====
-    with tab1:
-        cols = st.columns(4)
-        for i, name in enumerate(class_names):
-            prob = result_df[result_df['Sample_ID'] == selected_idx][f'Prob_{name}'].values[0]
-            with cols[i]:
-                st.metric(label=name, value=f"{prob:.1%}")
-
-    # ===== Tab 2: 真正的 SHAP waterfall 解释 =====
-    with tab2:
-        st.markdown(f"**预测亚型：{class_names[pred_label]}**")
-        st.caption("基于 SHAP LinearExplainer 的精确特征贡献分解（以训练分布为基线）")
-
-        if BACKGROUND is not None:
-            # 创建 Explainer 并计算 SHAP 值
+    # 预计算 SHAP
+    sv = None
+    if BACKGROUND is not None:
+        try:
             shap_explainer = shap.Explainer(MODEL, BACKGROUND)
             sv = shap_explainer(x_std.reshape(1, -1))
+        except Exception:
+            pass
 
-            # 构造当前预测类别的 shap.Explanation 对象（waterfall 必需）
+    # 预计算漂移
+    z_scores = None
+    if TRAIN_STATS is not None:
+        means = TRAIN_STATS['mean'].values
+        stds = TRAIN_STATS['std'].values
+        z_scores = (x_raw - means) / stds
+
+    # ===== 三栏同步展示 =====
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.markdown("#### 📊 概率概览")
+        for i, name in enumerate(class_names):
+            prob = result_df[result_df['Sample_ID'] == selected_idx][f'Prob_{name}'].values[0]
+            st.metric(label=name, value=f"{prob:.1%}")
+
+    with c2:
+        st.markdown("#### 🔍 SHAP 解释")
+        if sv is not None:
             exp = shap.Explanation(
                 values=sv.values[0, :, pred_label],
                 base_values=sv.base_values[0, pred_label],
                 data=x_std,
                 feature_names=FEATURE_NAMES
             )
-
-            # 绘制 waterfall
-            fig = plt.figure(figsize=(10, 6))
-            shap.plots.waterfall(exp, max_display=10, show=False)
+            fig = plt.figure(figsize=(5, 5))
+            shap.plots.waterfall(exp, max_display=8, show=False)
             fig = plt.gcf()
             st.pyplot(fig)
             plt.close(fig)
-
-            # SHAP 数值明细表
-            with st.expander("📋 查看 SHAP 数值明细（展开）"):
-                shap_df = pd.DataFrame({
-                    'Feature': FEATURE_NAMES,
-                    'Raw_Value': np.round(x_raw, 3),
-                    'Std_Value': np.round(x_std, 3),
-                    'SHAP_Value': np.round(sv.values[0, :, pred_label], 4),
-                    'Direction': ['🔴 推动预测' if v > 0 else '🔵 抑制预测' 
-                                  for v in sv.values[0, :, pred_label]]
-                }).sort_values('SHAP_Value', key=abs, ascending=False)
-                st.dataframe(shap_df, use_container_width=True, hide_index=True)
         else:
-            st.warning("未找到背景数据文件 (background.npy)，无法生成 SHAP waterfall。")
+            st.warning("未找到背景数据文件 (background.npy)")
 
-        # 模型系数参考（与 SHAP 互补）
-        with st.expander("📐 查看模型系数（LogReg 参数，展开）"):
+    with c3:
+        st.markdown("#### ⚖️ 数据漂移")
+        if z_scores is not None:
+            fig, ax = plt.subplots(figsize=(5, 5))
+            colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
+                      for z in z_scores]
+            ax.barh(range(len(FEATURE_NAMES)), z_scores, color=colors, 
+                    edgecolor='black', linewidth=0.5)
+            ax.set_yticks(range(len(FEATURE_NAMES)))
+            ax.set_yticklabels(FEATURE_NAMES, fontsize=8)
+            ax.invert_yaxis()
+            ax.set_xlabel("Z-score", fontsize=9)
+            ax.axvline(x=0, color='black', linewidth=0.8)
+            ax.axvline(x=2, color='red', linestyle='--', alpha=0.5)
+            ax.axvline(x=-2, color='red', linestyle='--', alpha=0.5)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
+
+            abnormal = np.where(np.abs(z_scores) > 2)[0]
+            if len(abnormal) > 0:
+                st.warning(f"⚠️ {len(abnormal)} 个特征偏离 >2σ")
+            else:
+                st.success("✅ 分布正常")
+        else:
+            st.info("无训练统计")
+
+    # -------------------- 下方明细表（可折叠） --------------------
+    if sv is not None:
+        with st.expander("📋 查看 SHAP 数值明细与模型系数"):
+            shap_df = pd.DataFrame({
+                'Feature': FEATURE_NAMES,
+                'Raw_Value': np.round(x_raw, 3),
+                'Std_Value': np.round(x_std, 3),
+                'SHAP_Value': np.round(sv.values[0, :, pred_label], 4),
+                'Direction': ['🔴 推动' if v > 0 else '🔵 抑制' 
+                              for v in sv.values[0, :, pred_label]]
+            }).sort_values('SHAP_Value', key=abs, ascending=False)
+            st.dataframe(shap_df, use_container_width=True, hide_index=True)
+
             coef_df = pd.DataFrame({
                 'Feature': FEATURE_NAMES,
                 'Coefficient': np.round(COEF[pred_label], 4),
@@ -223,61 +242,23 @@ if uploaded_file is not None:
             }).sort_values('Abs_Coef', ascending=False)
             st.dataframe(coef_df, use_container_width=True, hide_index=True)
 
-    # ===== Tab 3: 数据漂移检测 =====
-    with tab3:
-        if TRAIN_STATS is not None:
-            means = TRAIN_STATS['mean'].values
-            stds = TRAIN_STATS['std'].values
-            z_scores = (x_raw - means) / stds
-
-            fig, ax = plt.subplots(figsize=(8, 5))
-            colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
-                      for z in z_scores]
-            ax.barh(range(len(FEATURE_NAMES)), z_scores, color=colors, 
-                    edgecolor='black', linewidth=0.5)
-            ax.set_yticks(range(len(FEATURE_NAMES)))
-            ax.set_yticklabels(FEATURE_NAMES)
-            ax.invert_yaxis()
-            ax.set_xlabel("Z-score (vs Training Distribution)", fontsize=11)
-            ax.set_title("Data Drift: Feature Deviation from Training Mean", 
-                        fontsize=12, fontweight='bold')
-            ax.axvline(x=0, color='black', linewidth=0.8)
-            ax.axvline(x=1, color='gray', linestyle='--', alpha=0.5)
-            ax.axvline(x=-1, color='gray', linestyle='--', alpha=0.5)
-            ax.axvline(x=2, color='red', linestyle='--', alpha=0.5)
-            ax.axvline(x=-2, color='red', linestyle='--', alpha=0.5)
-            plt.tight_layout()
-            st.pyplot(fig)
-            plt.close(fig)
-
-            # 异常警告
-            abnormal = np.where(np.abs(z_scores) > 2)[0]
-            if len(abnormal) > 0:
-                st.warning(
-                    f"⚠️ 以下特征偏离训练分布 >2σ，预测可靠性可能下降："
-                    f"{', '.join([FEATURE_NAMES[i] for i in abnormal])}"
-                )
-            else:
-                st.success("✅ 所有特征均在训练分布正常范围内（±2σ）")
-            
-            # 数值表
+    if z_scores is not None:
+        with st.expander("📐 查看数据漂移明细"):
             drift_df = pd.DataFrame({
                 'Feature': FEATURE_NAMES,
-                'Train_Mean': np.round(means, 3),
-                'Train_Std': np.round(stds, 3),
+                'Train_Mean': np.round(TRAIN_STATS['mean'].values, 3),
+                'Train_Std': np.round(TRAIN_STATS['std'].values, 3),
                 'Current_Value': np.round(x_raw, 3),
                 'Z_Score': np.round(z_scores, 2)
             }).sort_values('Z_Score', key=abs, ascending=False)
             st.dataframe(drift_df, use_container_width=True, hide_index=True)
-        else:
-            st.info("未找到训练分布统计文件 (train_stats.json)，无法执行漂移检测。")
 
     # -------------------- 导出 --------------------
     st.markdown("---")
     st.subheader("💾 导出结果")
 
-    c1, c2 = st.columns(2)
-    with c1:
+    col_dl1, col_dl2 = st.columns(2)
+    with col_dl1:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             result_df.to_excel(writer, index=False, sheet_name='Predictions')
@@ -288,7 +269,7 @@ if uploaded_file is not None:
             file_name="insomnia_subtype_predictions.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-    with c2:
+    with col_dl2:
         csv = result_df.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="📥 下载预测结果 (.csv)",
