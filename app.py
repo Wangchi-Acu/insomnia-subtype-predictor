@@ -107,21 +107,23 @@ if uploaded_file is not None:
             st.error(f"预测过程出错：{e}")
             st.stop()
 
-    # -------------------- 构建结果表（已移除 Predicted_Subtype） --------------------
+    # -------------------- 构建结果表（仅保留 Sample_ID + 概率） --------------------
     result_df = pd.DataFrame({
-        'Sample_ID': row_ids,
-        'Predicted_Label': pred
+        'Sample_ID': row_ids
     })
     for i, name in enumerate(class_names):
         result_df[f'Prob_{name}'] = np.round(proba[:, i], 4)
 
-    # 用于显示的列（隐藏 Sample_ID）
-    display_cols = [c for c in result_df.columns if c != 'Sample_ID']
+    # 用于显示的列（仅概率列）
+    display_cols = [f'Prob_{c}' for c in class_names]
 
     # -------------------- 并排布局：表格 + 单样本解析 --------------------
     st.markdown("---")
     
-    col_table, col_right = st.columns([1.5, 2])
+    # 🔧 栏宽比例：第一栏缩窄，右侧大栏加宽
+    # 当前比例 1 : 2.5，第一栏约占 28.6%，右侧约占 71.4%
+    # 如需更窄/更宽，直接修改下方数字，例如 [1, 3] 或 [1, 2]
+    col_table, col_right = st.columns([1, 3])
     
     # ===== 左侧：预测结果总表 =====
     with col_table:
@@ -151,7 +153,8 @@ if uploaded_file is not None:
         
         # 预计算公共变量
         sample_pos = row_ids.index(selected_idx)
-        pred_label = int(result_df[result_df['Sample_ID'] == selected_idx]['Predicted_Label'].values[0])
+        # 🔧 直接从预测数组获取标签，不再依赖结果表中的 Predicted_Label 列
+        pred_label = int(pred[sample_pos])
         x_raw = X_processed[sample_pos].copy()
         x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
         
