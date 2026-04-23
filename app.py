@@ -199,7 +199,7 @@ if uploaded_file is not None:
             st.caption("数据漂移检测")
             
             if z_scores is not None:
-                fig, ax = plt.subplots(figsize=(5, 8))
+                fig, ax = plt.subplots(figsize=(5, 5))
                 colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
                           for z in z_scores]
                 ax.barh(
