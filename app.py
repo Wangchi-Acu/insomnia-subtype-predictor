@@ -123,7 +123,7 @@ if uploaded_file is not None:
     # 🔧 栏宽比例：第一栏缩窄，右侧大栏加宽
     # 当前比例 1 : 2.5，第一栏约占 28.6%，右侧约占 71.4%
     # 如需更窄/更宽，直接修改下方数字，例如 [1, 3] 或 [1, 2]
-    col_table, col_right = st.columns([1, 3])
+    col_table, col_right = st.columns([1, 2.7])
     
     # ===== 左侧：预测结果总表 =====
     with col_table:
@@ -201,7 +201,7 @@ if uploaded_file is not None:
             st.caption("数据漂移检测")
             
             if z_scores is not None:
-                fig, ax = plt.subplots(figsize=(5, 8))
+                fig, ax = plt.subplots(figsize=(5, 4))
                 colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
                           for z in z_scores]
                 ax.barh(
