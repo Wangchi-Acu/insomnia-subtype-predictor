@@ -135,7 +135,7 @@ if uploaded_file is not None:
             st.dataframe(
                 styled,
                 use_container_width=True,
-                height=min(35 * len(result_df) + 50)
+                height=min(400, 35 * len(result_df) + 50)
             )
         except Exception:
             st.dataframe(result_df[display_cols], use_container_width=True)
