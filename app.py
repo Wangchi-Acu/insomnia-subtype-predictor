@@ -107,17 +107,16 @@ if uploaded_file is not None:
             st.error(f"预测过程出错：{e}")
             st.stop()
 
-    # -------------------- 构建结果表 --------------------
+    # -------------------- 构建结果表（已移除 Predicted_Subtype） --------------------
     result_df = pd.DataFrame({
         'Sample_ID': row_ids,
-        'Predicted_Subtype': [class_names[p] for p in pred],
         'Predicted_Label': pred
     })
     for i, name in enumerate(class_names):
         result_df[f'Prob_{name}'] = np.round(proba[:, i], 4)
 
-    # 用于显示的列（隐藏 Sample_ID 和 Max_Prob）
-    display_cols = [c for c in result_df.columns if c not in ['Sample_ID', 'Max_Prob']]
+    # 用于显示的列（隐藏 Sample_ID）
+    display_cols = [c for c in result_df.columns if c != 'Sample_ID']
 
     # -------------------- 并排布局：表格 + 单样本解析 --------------------
     st.markdown("---")
@@ -199,7 +198,7 @@ if uploaded_file is not None:
             st.caption("数据漂移检测")
             
             if z_scores is not None:
-                fig, ax = plt.subplots(figsize=(5, 5))
+                fig, ax = plt.subplots(figsize=(5, 8))
                 colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
                           for z in z_scores]
                 ax.barh(
