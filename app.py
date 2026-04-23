@@ -144,16 +144,29 @@ if uploaded_file is not None:
     with col_right:
         st.markdown("#### 🔬 单样本解析")
         
-        c_shap, c_drift = st.columns(2)
-        
-        # ----- 第二栏：选择器 + SHAP -----
-        with c_shap:
+        # 第一行：选择器（左） + 亚型标签（右）
+        c_select, c_label = st.columns(2)
+        with c_select:
             selected_idx = st.selectbox("选择样本查看详情", result_df['Sample_ID'].tolist())
-            
+            # 立即计算公共变量供右侧使用
             sample_pos = row_ids.index(selected_idx)
             pred_label = int(pred[sample_pos])
             x_raw = X_processed[sample_pos].copy()
             x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
+        
+        with c_label:
+            subtype_name = class_names[pred_label]
+            st.markdown(f"""
+            <div style="padding: 6px 0; width: 100%; text-align: center; border-radius: 6px; background-color: #1976d2; color: white; font-weight: bold; font-size: 14px; margin-top: 28px;">
+                {subtype_name}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 第二行：SHAP（左） + 数据漂移（右）
+        c_shap, c_drift = st.columns(2)
+        
+        with c_shap:
+            st.caption("SHAP 特征贡献")
             
             sv = None
             if BACKGROUND is not None:
@@ -162,8 +175,6 @@ if uploaded_file is not None:
                     sv = shap_explainer(x_std.reshape(1, -1))
                 except Exception:
                     pass
-            
-            st.caption("SHAP 特征贡献")
             
             if sv is not None:
                 exp = shap.Explanation(
@@ -180,16 +191,7 @@ if uploaded_file is not None:
             else:
                 st.warning("未找到背景数据")
         
-        # ----- 第三栏：亚型标签 + 数据漂移 -----
         with c_drift:
-            # 🔧 有色背景标签显示亚型名称
-            subtype_name = class_names[pred_label]
-            st.markdown(f"""
-            <div style="padding: 6px 14px; border-radius: 6px; background-color: #1976d2; color: white; font-weight: bold; display: inline-block; margin-bottom: 4px; font-size: 14px;">
-                {subtype_name}
-            </div>
-            """, unsafe_allow_html=True)
-            
             st.caption("数据漂移检测")
             
             z_scores = None
@@ -228,27 +230,8 @@ if uploaded_file is not None:
             else:
                 st.info("无训练统计")
 
-    # -------------------- 下方明细表（可折叠） --------------------
+    # -------------------- 下方明细表（仅保留漂移） --------------------
     st.markdown("---")
-    if sv is not None:
-        with st.expander("📋 查看 SHAP 数值明细与模型系数"):
-            shap_df = pd.DataFrame({
-                'Feature': FEATURE_NAMES,
-                'Raw_Value': np.round(x_raw, 3),
-                'Std_Value': np.round(x_std, 3),
-                'SHAP_Value': np.round(sv.values[0, :, pred_label], 4),
-                'Direction': ['🔴 推动' if v > 0 else '🔵 抑制' 
-                              for v in sv.values[0, :, pred_label]]
-            }).sort_values('SHAP_Value', key=abs, ascending=False)
-            st.dataframe(shap_df, use_container_width=True, hide_index=True)
-
-            coef_df = pd.DataFrame({
-                'Feature': FEATURE_NAMES,
-                'Coefficient': np.round(COEF[pred_label], 4),
-                'Abs_Coef': np.round(np.abs(COEF[pred_label]), 4)
-            }).sort_values('Abs_Coef', ascending=False)
-            st.dataframe(coef_df, use_container_width=True, hide_index=True)
-
     if z_scores is not None:
         with st.expander("📐 查看数据漂移明细"):
             drift_df = pd.DataFrame({
