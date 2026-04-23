@@ -107,22 +107,18 @@ if uploaded_file is not None:
             st.error(f"预测过程出错：{e}")
             st.stop()
 
-    # -------------------- 构建结果表（仅保留 Sample_ID + 概率） --------------------
+    # -------------------- 构建结果表（仅保留概率列） --------------------
     result_df = pd.DataFrame({
         'Sample_ID': row_ids
     })
     for i, name in enumerate(class_names):
         result_df[f'Prob_{name}'] = np.round(proba[:, i], 4)
 
-    # 用于显示的列（仅概率列）
     display_cols = [f'Prob_{c}' for c in class_names]
 
-    # -------------------- 并排布局：表格 + 单样本解析 --------------------
+    # -------------------- 并排布局 --------------------
     st.markdown("---")
     
-    # 🔧 栏宽比例：第一栏缩窄，右侧大栏加宽
-    # 当前比例 1 : 2.5，第一栏约占 28.6%，右侧约占 71.4%
-    # 如需更窄/更宽，直接修改下方数字，例如 [1, 3] 或 [1, 2]
     col_table, col_right = st.columns([1, 2.7])
     
     # ===== 左侧：预测结果总表 =====
@@ -148,37 +144,25 @@ if uploaded_file is not None:
     with col_right:
         st.markdown("#### 🔬 单样本解析")
         
-        # 横跨第二、三栏的下拉选择器
-        selected_idx = st.selectbox("选择样本查看详情", result_df['Sample_ID'].tolist())
-        
-        # 预计算公共变量
-        sample_pos = row_ids.index(selected_idx)
-        # 🔧 直接从预测数组获取标签，不再依赖结果表中的 Predicted_Label 列
-        pred_label = int(pred[sample_pos])
-        x_raw = X_processed[sample_pos].copy()
-        x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
-        
-        # SHAP 预计算
-        sv = None
-        if BACKGROUND is not None:
-            try:
-                shap_explainer = shap.Explainer(MODEL, BACKGROUND)
-                sv = shap_explainer(x_std.reshape(1, -1))
-            except Exception:
-                pass
-        
-        # 漂移预计算
-        z_scores = None
-        if TRAIN_STATS is not None:
-            means = TRAIN_STATS['mean'].values
-            stds = TRAIN_STATS['std'].values
-            z_scores = (x_raw - means) / stds
-        
-        # 内部分两列：SHAP + 漂移
         c_shap, c_drift = st.columns(2)
         
+        # ----- 第二栏：选择器 + SHAP -----
         with c_shap:
-            st.markdown(f"**{class_names[pred_label]}**")
+            selected_idx = st.selectbox("选择样本查看详情", result_df['Sample_ID'].tolist())
+            
+            sample_pos = row_ids.index(selected_idx)
+            pred_label = int(pred[sample_pos])
+            x_raw = X_processed[sample_pos].copy()
+            x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
+            
+            sv = None
+            if BACKGROUND is not None:
+                try:
+                    shap_explainer = shap.Explainer(MODEL, BACKGROUND)
+                    sv = shap_explainer(x_std.reshape(1, -1))
+                except Exception:
+                    pass
+            
             st.caption("SHAP 特征贡献")
             
             if sv is not None:
@@ -196,12 +180,26 @@ if uploaded_file is not None:
             else:
                 st.warning("未找到背景数据")
         
+        # ----- 第三栏：亚型标签 + 数据漂移 -----
         with c_drift:
-            st.markdown(f"**{class_names[pred_label]}**")
+            # 🔧 有色背景标签显示亚型名称
+            subtype_name = class_names[pred_label]
+            st.markdown(f"""
+            <div style="padding: 6px 14px; border-radius: 6px; background-color: #1976d2; color: white; font-weight: bold; display: inline-block; margin-bottom: 4px; font-size: 14px;">
+                {subtype_name}
+            </div>
+            """, unsafe_allow_html=True)
+            
             st.caption("数据漂移检测")
             
+            z_scores = None
+            if TRAIN_STATS is not None:
+                means = TRAIN_STATS['mean'].values
+                stds = TRAIN_STATS['std'].values
+                z_scores = (x_raw - means) / stds
+            
             if z_scores is not None:
-                fig, ax = plt.subplots(figsize=(5, 4))
+                fig, ax = plt.subplots(figsize=(5, 8))
                 colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
                           for z in z_scores]
                 ax.barh(
