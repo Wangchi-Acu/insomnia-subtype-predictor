@@ -183,7 +183,7 @@ if uploaded_file is not None:
                     data=x_std,
                     feature_names=FEATURE_NAMES
                 )
-                fig = plt.figure(figsize=(5, 4))
+                fig = plt.figure(figsize=(5, 8))
                 shap.plots.waterfall(exp, max_display=len(FEATURE_NAMES), show=False)
                 fig = plt.gcf()
                 st.pyplot(fig)
@@ -201,7 +201,7 @@ if uploaded_file is not None:
                 z_scores = (x_raw - means) / stds
             
             if z_scores is not None:
-                fig, ax = plt.subplots(figsize=(5, 8))
+                fig, ax = plt.subplots(figsize=(5, 4))
                 colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
                           for z in z_scores]
                 ax.barh(
