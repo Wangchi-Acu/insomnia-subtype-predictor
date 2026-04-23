@@ -119,7 +119,7 @@ if uploaded_file is not None:
     # -------------------- 并排布局 --------------------
     st.markdown("---")
     
-    col_table, col_right = st.columns([1, 2.7])
+    col_table, col_right = st.columns([1, 2.5])
     
     # ===== 左侧：预测结果总表 =====
     with col_table:
@@ -183,7 +183,7 @@ if uploaded_file is not None:
                     data=x_std,
                     feature_names=FEATURE_NAMES
                 )
-                fig = plt.figure(figsize=(5, 8))
+                fig = plt.figure(figsize=(5, 4))
                 shap.plots.waterfall(exp, max_display=len(FEATURE_NAMES), show=False)
                 fig = plt.gcf()
                 st.pyplot(fig)
