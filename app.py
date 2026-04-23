@@ -119,16 +119,15 @@ if uploaded_file is not None:
     # 用于显示的列（隐藏 Sample_ID 和 Max_Prob）
     display_cols = [c for c in result_df.columns if c not in ['Sample_ID', 'Max_Prob']]
 
-    # -------------------- 并排布局：表格 + SHAP + 漂移 --------------------
+    # -------------------- 并排布局：表格 + 单样本解析 --------------------
     st.markdown("---")
-    st.subheader("📊 预测结果与单样本解析")
-
-    col_table, col_shap, col_drift = st.columns([1.5, 1, 1])
-
-    # ===== 左侧：预测结果总表 + 样本选择器 =====
+    
+    col_table, col_right = st.columns([1.5, 2])
+    
+    # ===== 左侧：预测结果总表 =====
     with col_table:
-        st.markdown("#### 预测结果总表")
-
+        st.markdown("#### 📊 预测结果")
+        
         format_dict = {f'Prob_{c}': "{:.2%}" for c in class_names}
         try:
             styled = result_df[display_cols].style.background_gradient(
@@ -143,85 +142,91 @@ if uploaded_file is not None:
             )
         except Exception:
             st.dataframe(result_df[display_cols], use_container_width=True)
-
-        st.markdown("---")
+    
+    # ===== 右侧：单样本解析 =====
+    with col_right:
+        st.markdown("#### 🔬 单样本解析")
+        
+        # 横跨第二、三栏的下拉选择器
         selected_idx = st.selectbox("选择样本查看详情", result_df['Sample_ID'].tolist())
-
-    # 根据选中样本预计算公共变量
-    sample_pos = row_ids.index(selected_idx)
-    pred_label = int(result_df[result_df['Sample_ID'] == selected_idx]['Predicted_Label'].values[0])
-    x_raw = X_processed[sample_pos].copy()
-    x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
-
-    # SHAP 预计算
-    sv = None
-    if BACKGROUND is not None:
-        try:
-            shap_explainer = shap.Explainer(MODEL, BACKGROUND)
-            sv = shap_explainer(x_std.reshape(1, -1))
-        except Exception:
-            pass
-
-    # 漂移预计算
-    z_scores = None
-    if TRAIN_STATS is not None:
-        means = TRAIN_STATS['mean'].values
-        stds = TRAIN_STATS['std'].values
-        z_scores = (x_raw - means) / stds
-
-    # ===== 中栏：SHAP 解释 =====
-    with col_shap:
-        st.markdown(f"**{class_names[pred_label]}**")
-        st.caption("SHAP 特征贡献")
-
-        if sv is not None:
-            exp = shap.Explanation(
-                values=sv.values[0, :, pred_label],
-                base_values=sv.base_values[0, pred_label],
-                data=x_std,
-                feature_names=FEATURE_NAMES
-            )
-            fig = plt.figure(figsize=(5, 5))
-            shap.plots.waterfall(exp, max_display=8, show=False)
-            fig = plt.gcf()
-            st.pyplot(fig)
-            plt.close(fig)
-        else:
-            st.warning("未找到背景数据")
-
-    # ===== 右栏：数据漂移 =====
-    with col_drift:
-        st.markdown(f"**{class_names[pred_label]}**")
-        st.caption("数据漂移检测")
-
-        if z_scores is not None:
-            fig, ax = plt.subplots(figsize=(5, 5))
-            colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
-                      for z in z_scores]
-            ax.barh(
-                range(len(FEATURE_NAMES)),
-                z_scores,
-                color=colors,
-                alpha=0.7
-            )
-            ax.set_yticks(range(len(FEATURE_NAMES)))
-            ax.set_yticklabels(FEATURE_NAMES, fontsize=8)
-            ax.invert_yaxis()
-            ax.set_xlabel("Z-score", fontsize=9)
-            ax.axvline(x=0, color='black', linewidth=0.8)
-            ax.axvline(x=2, color='red', linestyle='--', alpha=0.5)
-            ax.axvline(x=-2, color='red', linestyle='--', alpha=0.5)
-            plt.tight_layout()
-            st.pyplot(fig)
-            plt.close(fig)
-
-            abnormal = np.where(np.abs(z_scores) > 2)[0]
-            if len(abnormal) > 0:
-                st.warning(f"⚠️ {len(abnormal)} 个特征偏离 >2σ")
+        
+        # 预计算公共变量
+        sample_pos = row_ids.index(selected_idx)
+        pred_label = int(result_df[result_df['Sample_ID'] == selected_idx]['Predicted_Label'].values[0])
+        x_raw = X_processed[sample_pos].copy()
+        x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
+        
+        # SHAP 预计算
+        sv = None
+        if BACKGROUND is not None:
+            try:
+                shap_explainer = shap.Explainer(MODEL, BACKGROUND)
+                sv = shap_explainer(x_std.reshape(1, -1))
+            except Exception:
+                pass
+        
+        # 漂移预计算
+        z_scores = None
+        if TRAIN_STATS is not None:
+            means = TRAIN_STATS['mean'].values
+            stds = TRAIN_STATS['std'].values
+            z_scores = (x_raw - means) / stds
+        
+        # 内部分两列：SHAP + 漂移
+        c_shap, c_drift = st.columns(2)
+        
+        with c_shap:
+            st.markdown(f"**{class_names[pred_label]}**")
+            st.caption("SHAP 特征贡献")
+            
+            if sv is not None:
+                exp = shap.Explanation(
+                    values=sv.values[0, :, pred_label],
+                    base_values=sv.base_values[0, pred_label],
+                    data=x_std,
+                    feature_names=FEATURE_NAMES
+                )
+                fig = plt.figure(figsize=(5, 8))
+                shap.plots.waterfall(exp, max_display=len(FEATURE_NAMES), show=False)
+                fig = plt.gcf()
+                st.pyplot(fig)
+                plt.close(fig)
             else:
-                st.success("✅ 分布正常")
-        else:
-            st.info("无训练统计")
+                st.warning("未找到背景数据")
+        
+        with c_drift:
+            st.markdown(f"**{class_names[pred_label]}**")
+            st.caption("数据漂移检测")
+            
+            if z_scores is not None:
+                fig, ax = plt.subplots(figsize=(5, 8))
+                colors = ['#d62728' if abs(z) > 2 else '#ff7f0e' if abs(z) > 1 else '#2ca02c' 
+                          for z in z_scores]
+                ax.barh(
+                    range(len(FEATURE_NAMES)),
+                    z_scores,
+                    color=colors,
+                    alpha=0.7,
+                    edgecolor='none'
+                )
+                ax.set_yticks(range(len(FEATURE_NAMES)))
+                ax.set_yticklabels(FEATURE_NAMES, fontsize=8)
+                ax.invert_yaxis()
+                ax.set_xlabel("Z-score", fontsize=9)
+                ax.axvline(x=0, color='black', linewidth=0.8)
+                ax.axvline(x=2, color='red', linestyle='--', alpha=0.5)
+                ax.axvline(x=-2, color='red', linestyle='--', alpha=0.5)
+                plt.tight_layout()
+                st.pyplot(fig)
+                plt.close(fig)
+                
+                abnormal = np.where(np.abs(z_scores) > 2)[0]
+                if len(abnormal) > 0:
+                    st.warning(f"⚠️ {len(abnormal)} 个特征偏离 >2σ")
+                else:
+                    st.success("✅ 分布正常")
+            else:
+                st.info("无训练统计")
 
     # -------------------- 下方明细表（可折叠） --------------------
     st.markdown("---")
