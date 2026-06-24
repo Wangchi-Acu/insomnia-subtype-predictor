@@ -11,7 +11,7 @@ import shap
 from src.preprocessing import preprocess_input
 from src.predict import predict
 
-# ==================== 加载模型与元数据 ====================
+# ==================== Load Model & Metadata ====================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 PIPELINE = joblib.load(os.path.join(BASE_DIR, 'model', 'model.pkl'))
@@ -32,9 +32,9 @@ TRAIN_STATS = pd.read_json(train_stats_path) if os.path.exists(train_stats_path)
 background_path = os.path.join(BASE_DIR, 'model', 'background.npy')
 BACKGROUND = np.load(background_path) if os.path.exists(background_path) else None
 
-# ==================== 页面配置 ====================
+# ==================== Page Configuration ====================
 st.set_page_config(
-    page_title="失眠亚型预测系统",
+    page_title="Insomnia Subtype Prediction System",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -47,56 +47,56 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== 侧边栏 ====================
+# ==================== Sidebar ====================
 with st.sidebar:
-    st.title("🧠 失眠亚型分类器")
+    st.title("🧠 Insomnia Subtype Classifier")
     st.markdown("""
-    **基于静息态心电功能连接特征**  
-    使用嵌套交叉验证训练的 Logistic Regression 模型，实现四亚型自动判别。
+    **Based on Overnight HRV and Clinical Features**  
+    Using a Logistic Regression model trained with nested cross-validation for automatic four-subtype classification.
     """)
     st.markdown("---")
-    st.markdown("### 使用步骤")
-    st.markdown("1. 上传包含心电特征的 Excel/CSV 文件")
-    st.markdown("2. 系统自动预处理并对齐特征")
-    st.markdown("3. 查看预测概率与亚型标签")
-    st.markdown("4. 下载带预测结果的数据表")
+    st.markdown("### Usage Steps")
+    st.markdown("1. Upload an Excel/CSV file containing ECG features")
+    st.markdown("2. System automatically preprocesses and aligns features")
+    st.markdown("3. View prediction probabilities and subtype labels")
+    st.markdown("4. Download data table with predictions")
     st.markdown("---")
     
     example_path = os.path.join(BASE_DIR, 'model', 'example_input.xlsx')
     if os.path.exists(example_path):
         with open(example_path, 'rb') as f:
             st.download_button(
-                label="📥 下载示例输入模板",
+                label="📥 Download Example Input Template",
                 data=f,
                 file_name="example_input.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
     
     st.markdown("---")
-    st.info(f"模型特征数：{len(FEATURE_NAMES)}", icon="ℹ️")
+    st.info(f"Model Features: {len(FEATURE_NAMES)}", icon="ℹ️")
 
-# ==================== 主界面 ====================
-st.title("失眠症患者亚型预测平台")
+# ==================== Main Interface ====================
+st.title("Insomnia Patient Subtype Prediction Platform")
 st.caption("Insomnia Subtype Classification via Resting-State EEG Functional Connectivity")
 
 uploaded_file = st.file_uploader(
-    "📤 上传待预测数据（.xlsx 或 .csv）",
+    "📤 Upload Data for Prediction (.xlsx or .csv)",
     type=["xlsx", "csv"],
     accept_multiple_files=False
 )
 
 if uploaded_file is not None:
-    # -------------------- 读取与预测 --------------------
+    # -------------------- Read & Predict --------------------
     try:
         if uploaded_file.name.endswith('.csv'):
             df_raw = pd.read_csv(uploaded_file)
         else:
             df_raw = pd.read_excel(uploaded_file)
     except Exception as e:
-        st.error(f"文件读取失败：{e}")
+        st.error(f"File read failed: {e}")
         st.stop()
 
-    with st.spinner("正在进行特征对齐、标准化与模型推理..."):
+    with st.spinner("Performing feature alignment, standardization, and model inference..."):
         try:
             X_processed, row_ids = preprocess_input(df_raw)
             pred, proba, class_names = predict(X_processed)
@@ -104,10 +104,10 @@ if uploaded_file is not None:
             st.error(str(ve))
             st.stop()
         except Exception as e:
-            st.error(f"预测过程出错：{e}")
+            st.error(f"Prediction error: {e}")
             st.stop()
 
-    # -------------------- 构建结果表（仅保留概率列） --------------------
+    # -------------------- Build Result Table (Probability Only) --------------------
     result_df = pd.DataFrame({
         'Sample_ID': row_ids
     })
@@ -116,14 +116,14 @@ if uploaded_file is not None:
 
     display_cols = [f'Prob_{c}' for c in class_names]
 
-    # -------------------- 并排布局 --------------------
+    # -------------------- Parallel Layout --------------------
     st.markdown("---")
     
     col_table, col_right = st.columns([1, 2.5])
     
-    # ===== 左侧：预测结果总表 =====
+    # ===== Left: Prediction Results =====
     with col_table:
-        st.markdown("#### 📊 预测结果")
+        st.markdown("#### 📊 Prediction Results")
         
         format_dict = {f'Prob_{c}': "{:.2%}" for c in class_names}
         try:
@@ -140,15 +140,15 @@ if uploaded_file is not None:
         except Exception:
             st.dataframe(result_df[display_cols], use_container_width=True)
     
-    # ===== 右侧：单样本解析 =====
+    # ===== Right: Single Sample Analysis =====
     with col_right:
-        st.markdown("#### 🔬 单样本解析")
+        st.markdown("#### 🔬 Single Sample Analysis")
         
-        # 第一行：选择器（左） + 亚型标签（右）
+        # First Row: Selector (Left) + Subtype Label (Right)
         c_select, c_label = st.columns(2)
         with c_select:
-            selected_idx = st.selectbox("选择样本查看详情", result_df['Sample_ID'].tolist())
-            # 立即计算公共变量供右侧使用
+            selected_idx = st.selectbox("Select sample for details", result_df['Sample_ID'].tolist())
+            # Calculate common variables for right side immediately
             sample_pos = row_ids.index(selected_idx)
             pred_label = int(pred[sample_pos])
             x_raw = X_processed[sample_pos].copy()
@@ -162,11 +162,11 @@ if uploaded_file is not None:
             </div>
             """, unsafe_allow_html=True)
         
-        # 第二行：SHAP（左） + 数据漂移（右）
+        # Second Row: SHAP (Left) + Data Drift (Right)
         c_shap, c_drift = st.columns(2)
         
         with c_shap:
-            st.caption("SHAP 特征贡献")
+            st.caption("SHAP Feature Contribution")
             
             sv = None
             if BACKGROUND is not None:
@@ -189,10 +189,10 @@ if uploaded_file is not None:
                 st.pyplot(fig)
                 plt.close(fig)
             else:
-                st.warning("未找到背景数据")
+                st.warning("Background data not found")
         
         with c_drift:
-            st.caption("数据漂移检测")
+            st.caption("Data Drift Detection")
             
             z_scores = None
             if TRAIN_STATS is not None:
@@ -224,16 +224,16 @@ if uploaded_file is not None:
                 
                 abnormal = np.where(np.abs(z_scores) > 2)[0]
                 if len(abnormal) > 0:
-                    st.warning(f"⚠️ {len(abnormal)} 个特征偏离 >2σ")
+                    st.warning(f"⚠️ {len(abnormal)} features deviate >2σ")
                 else:
-                    st.success("✅ 分布正常")
+                    st.success("✅ Distribution normal")
             else:
-                st.info("无训练统计")
+                st.info("No training stats")
 
-    # -------------------- 下方明细表（仅保留漂移） --------------------
+    # -------------------- Lower Detail Table (Drift Only) --------------------
     st.markdown("---")
     if z_scores is not None:
-        with st.expander("📐 查看数据漂移明细"):
+        with st.expander("📐 View Data Drift Details"):
             drift_df = pd.DataFrame({
                 'Feature': FEATURE_NAMES,
                 'Train_Mean': np.round(TRAIN_STATS['mean'].values, 3),
@@ -243,9 +243,9 @@ if uploaded_file is not None:
             }).sort_values('Z_Score', key=abs, ascending=False)
             st.dataframe(drift_df, use_container_width=True, hide_index=True)
 
-    # -------------------- 导出 --------------------
+    # -------------------- Export --------------------
     st.markdown("---")
-    st.subheader("💾 导出结果")
+    st.subheader("💾 Export Results")
 
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
@@ -254,7 +254,7 @@ if uploaded_file is not None:
             result_df.to_excel(writer, index=False, sheet_name='Predictions')
         output.seek(0)
         st.download_button(
-            label="📥 下载预测结果 (.xlsx)",
+            label="📥 Download Predictions (.xlsx)",
             data=output,
             file_name="insomnia_subtype_predictions.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -262,21 +262,21 @@ if uploaded_file is not None:
     with col_dl2:
         csv = result_df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 下载预测结果 (.csv)",
+            label="📥 Download Predictions (.csv)",
             data=csv,
             file_name="insomnia_subtype_predictions.csv",
             mime="text/csv"
         )
 
 else:
-    st.info("👈 请在左侧上传数据文件，或下载示例模板以开始预测。", icon="⬆️")
+    st.info("👈 Please upload a data file in the sidebar, or download the example template to start predicting.", icon="⬆️")
     st.markdown("""
-    ### 输入文件格式要求
-    | 要求 | 说明 |
-    |------|------|
-    | 格式 | `.xlsx` 或 `.csv` |
-    | 特征列 | 必须与训练数据特征完全一致（共 **11** 列） |
-    | 目标列 | 可选。若最后一列为标签，系统会自动忽略 |
-    | 缺失值 | 系统自动填充为 0 |
-    | 异常值 | 无穷大(Inf) 会被替换为 0 |
+    ### Input File Format Requirements
+    | Requirement | Description |
+    |-------------|-------------|
+    | Format | `.xlsx` or `.csv` |
+    | Feature Columns | Must match training data features exactly (total **11** columns) |
+    | Target Column | Optional. If the last column is a label, it will be ignored automatically |
+    | Missing Values | Automatically filled with 0 |
+    | Outliers | Infinity (Inf) will be replaced with 0 |
     """)
