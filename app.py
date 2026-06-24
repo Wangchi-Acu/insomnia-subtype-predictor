@@ -32,6 +32,9 @@ TRAIN_STATS = pd.read_json(train_stats_path) if os.path.exists(train_stats_path)
 background_path = os.path.join(BASE_DIR, 'model', 'background.npy')
 BACKGROUND = np.load(background_path) if os.path.exists(background_path) else None
 
+# Update class names to Cluster0, Cluster1, Cluster2, Cluster3
+CLASS_NAMES = ['Cluster0', 'Cluster1', 'Cluster2', 'Cluster3']
+
 # ==================== Page Configuration ====================
 st.set_page_config(
     page_title="Insomnia Subtype Prediction System",
@@ -52,13 +55,13 @@ with st.sidebar:
     st.title("🧠 Insomnia Subtype Classifier")
     st.markdown("""
     **Based on Overnight HRV and Clinical Features**  
-    Using a Logistic Regression model trained with nested cross-validation for automatic four-subtype classification.
+    Using a Logistic Regression model trained with nested cross-validation for automatic four-cluster classification.
     """)
     st.markdown("---")
     st.markdown("### Usage Steps")
     st.markdown("1. Upload an Excel/CSV file containing ECG features")
     st.markdown("2. System automatically preprocesses and aligns features")
-    st.markdown("3. View prediction probabilities and subtype labels")
+    st.markdown("3. View prediction probabilities and cluster labels")
     st.markdown("4. Download data table with predictions")
     st.markdown("---")
     
@@ -76,8 +79,8 @@ with st.sidebar:
     st.info(f"Model Features: {len(FEATURE_NAMES)}", icon="ℹ️")
 
 # ==================== Main Interface ====================
-st.title("Insomnia Patient Subtype Prediction Platform")
-st.caption("Insomnia Subtype Classification via Resting-State EEG Functional Connectivity")
+st.title("Insomnia Patient Cluster Prediction Platform")
+st.caption("Insomnia Cluster Classification via Resting-State EEG Functional Connectivity")
 
 uploaded_file = st.file_uploader(
     "📤 Upload Data for Prediction (.xlsx or .csv)",
@@ -99,7 +102,9 @@ if uploaded_file is not None:
     with st.spinner("Performing feature alignment, standardization, and model inference..."):
         try:
             X_processed, row_ids = preprocess_input(df_raw)
-            pred, proba, class_names = predict(X_processed)
+            pred, proba, _ = predict(X_processed)
+            # Use our custom class names instead of the ones from the model
+            class_names = CLASS_NAMES
         except ValueError as ve:
             st.error(str(ve))
             st.stop()
@@ -144,7 +149,7 @@ if uploaded_file is not None:
     with col_right:
         st.markdown("#### 🔬 Single Sample Analysis")
         
-        # First Row: Selector (Left) + Subtype Label (Right)
+        # First Row: Selector (Left) + Cluster Label (Right)
         c_select, c_label = st.columns(2)
         with c_select:
             selected_idx = st.selectbox("Select sample for details", result_df['Sample_ID'].tolist())
@@ -155,10 +160,10 @@ if uploaded_file is not None:
             x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
         
         with c_label:
-            subtype_name = class_names[pred_label]
+            cluster_name = class_names[pred_label]
             st.markdown(f"""
             <div style="padding: 6px 0; width: 100%; text-align: center; border-radius: 6px; background-color: #1976d2; color: white; font-weight: bold; font-size: 14px; margin-top: 28px;">
-                {subtype_name}
+                {cluster_name}
             </div>
             """, unsafe_allow_html=True)
         
@@ -256,7 +261,7 @@ if uploaded_file is not None:
         st.download_button(
             label="📥 Download Predictions (.xlsx)",
             data=output,
-            file_name="insomnia_subtype_predictions.xlsx",
+            file_name="insomnia_cluster_predictions.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
     with col_dl2:
@@ -264,7 +269,7 @@ if uploaded_file is not None:
         st.download_button(
             label="📥 Download Predictions (.csv)",
             data=csv,
-            file_name="insomnia_subtype_predictions.csv",
+            file_name="insomnia_cluster_predictions.csv",
             mime="text/csv"
         )
 
