@@ -33,7 +33,10 @@ background_path = os.path.join(BASE_DIR, 'model', 'background.npy')
 BACKGROUND = np.load(background_path) if os.path.exists(background_path) else None
 
 # Update class names to Cluster0, Cluster1, Cluster2, Cluster3
-CLASS_NAMES = ['Cluster0', 'Cluster1', 'Cluster2', 'Cluster3']
+CLASS_NAMES = ['Cluster0:low burden—complexity preserved—cerebello-thalamic reorganization',
+               'Cluster1:high clinical burden—low complexity—widespread hypoconnectivity', 
+               'Cluster2:high reactivity—high dispersion—attention control network reorganization', 
+               'Cluster3:peripheral low deviation—central integration preserved']
 
 # ==================== Page Configuration ====================
 st.set_page_config(
