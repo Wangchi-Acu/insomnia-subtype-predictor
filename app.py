@@ -32,11 +32,16 @@ TRAIN_STATS = pd.read_json(train_stats_path) if os.path.exists(train_stats_path)
 background_path = os.path.join(BASE_DIR, 'model', 'background.npy')
 BACKGROUND = np.load(background_path) if os.path.exists(background_path) else None
 
-# Update class names to Cluster0, Cluster1, Cluster2, Cluster3
-CLASS_NAMES = ['Cluster0:low burden—complexity preserved—cerebello-thalamic reorganization',
-               'Cluster1:high clinical burden—low complexity—widespread hypoconnectivity', 
-               'Cluster2:high reactivity—high dispersion—attention control network reorganization', 
-               'Cluster3:peripheral low deviation—central integration preserved']
+# Define class names - FULL version for detail display
+CLASS_NAMES_FULL = [
+    'Cluster0:low burden—complexity preserved—cerebello-thalamic reorganization',
+    'Cluster1:high clinical burden—low complexity—widespread hypoconnectivity', 
+    'Cluster2:high reactivity—high dispersion—attention control network reorganization', 
+    'Cluster3:peripheral low deviation—central integration preserved'
+]
+
+# Define class names - SHORT version for table headers and exports
+CLASS_NAMES_SHORT = ['Cluster0', 'Cluster1', 'Cluster2', 'Cluster3']
 
 # ==================== Page Configuration ====================
 st.set_page_config(
@@ -106,8 +111,8 @@ if uploaded_file is not None:
         try:
             X_processed, row_ids = preprocess_input(df_raw)
             pred, proba, _ = predict(X_processed)
-            # Use our custom class names instead of the ones from the model
-            class_names = CLASS_NAMES
+            # Use short names for general display
+            class_names = CLASS_NAMES_SHORT
         except ValueError as ve:
             st.error(str(ve))
             st.stop()
@@ -119,10 +124,11 @@ if uploaded_file is not None:
     result_df = pd.DataFrame({
         'Sample_ID': row_ids
     })
-    for i, name in enumerate(class_names):
+    # Use SHORT names for table columns
+    for i, name in enumerate(CLASS_NAMES_SHORT):
         result_df[f'Prob_{name}'] = np.round(proba[:, i], 4)
 
-    display_cols = [f'Prob_{c}' for c in class_names]
+    display_cols = [f'Prob_{c}' for c in CLASS_NAMES_SHORT]
 
     # -------------------- Parallel Layout --------------------
     st.markdown("---")
@@ -133,10 +139,10 @@ if uploaded_file is not None:
     with col_table:
         st.markdown("#### 📊 Prediction Results")
         
-        format_dict = {f'Prob_{c}': "{:.2%}" for c in class_names}
+        format_dict = {f'Prob_{c}': "{:.2%}" for c in CLASS_NAMES_SHORT}
         try:
             styled = result_df[display_cols].style.background_gradient(
-                subset=[f'Prob_{c}' for c in class_names],
+                subset=[f'Prob_{c}' for c in CLASS_NAMES_SHORT],
                 cmap='YlGnBu',
                 vmin=0, vmax=1
             ).format(format_dict)
@@ -163,10 +169,11 @@ if uploaded_file is not None:
             x_std = SCALER.transform(X_processed[sample_pos:sample_pos+1])[0]
         
         with c_label:
-            cluster_name = class_names[pred_label]
+            # Use FULL name for the detail display
+            cluster_name_full = CLASS_NAMES_FULL[pred_label]
             st.markdown(f"""
             <div style="padding: 6px 0; width: 100%; text-align: center; border-radius: 6px; background-color: #1976d2; color: white; font-weight: bold; font-size: 14px; margin-top: 28px;">
-                {cluster_name}
+                {cluster_name_full}
             </div>
             """, unsafe_allow_html=True)
         
