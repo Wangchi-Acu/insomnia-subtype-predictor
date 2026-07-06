@@ -109,15 +109,6 @@ st.markdown("""
         letter-spacing: 0.5px;
         margin-bottom: 4px;
     }
-    .disclaimer-box {
-        background-color: #fff3e0;
-        border-left: 4px solid #ff9800;
-        border-radius: 4px;
-        padding: 10px 14px;
-        margin-top: 12px;
-        font-size: 12px;
-        color: #5d4037;
-    }
     .tagline-badge {
         display: inline-block;
         background-color: #e3f2fd;
@@ -175,12 +166,10 @@ with st.sidebar:
     # ---- Sidebar Disclaimer ----
     st.markdown("---")
     st.markdown("""
-    <div style="font-size: 11px; color: #888; line-height: 1.5;">
-    <b>Disclaimer:</b> This tool is for <b>research purposes only</b> and does not constitute medical advice. 
+    **Disclaimer:** This tool is for **research purposes only** and does not constitute medical advice. 
     Clinical decisions should not be made solely based on this platform's outputs. 
     Always consult qualified healthcare professionals.
-    </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 # ==================== Main Interface ====================
@@ -340,7 +329,7 @@ if uploaded_file is not None:
             else:
                 st.info("No training stats")
         
-        # ==================== NEW: Subgroup Population Characteristics (Moved to bottom) ====================
+        # ==================== Subgroup Population Characteristics (Moved to bottom) ====================
         st.markdown("---")
         st.markdown("#### 🧬 Subgroup Population Characteristics")
         
@@ -429,13 +418,9 @@ if uploaded_file is not None:
             mime="text/csv"
         )
     
-    # ==================== Footer Disclaimer ====================
+    # ==================== Footer Disclaimer (without div) ====================
     st.markdown("---")
-    st.markdown(f"""
-    <div class="disclaimer-box">
-        {DISCLAIMER_TEXT}
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(DISCLAIMER_TEXT)
 
 else:
     st.info("👈 Please upload a data file in the sidebar, or download the example template to start predicting.", icon="⬆️")
@@ -451,10 +436,6 @@ else:
     """
     )
     
-    # ==================== Disclaimer on empty state ====================
+    # ==================== Disclaimer on empty state (without div) ====================
     st.markdown("---")
-    st.markdown(f"""
-    <div class="disclaimer-box">
-        {DISCLAIMER_TEXT}
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(DISCLAIMER_TEXT)
