@@ -48,36 +48,36 @@ CLASS_NAMES_SHORT = ['Cluster0', 'Cluster1', 'Cluster2', 'Cluster3']
 
 CLUSTER_PROFILES = {
     0: {
-        "tagline": "Early-Stage Compensatory Insomnia",
-        "autonomic_summary": "Relatively preserved autonomic complexity with elevated multiscale entropy (MAE_1) and increased MeanNN, suggesting maintained regulatory flexibility and slower-timescale adaptive processes.",
-        "symptom_description": "Youngest age distribution with relatively mild clinical symptom burden. PSQI and ISI may be mildly elevated. Anxiety-depression scores (SAS, SDS) are generally lower than other clusters. Daytime fatigue (FSS) is moderate.",
-        "network_signature": "No widespread pathological hypoconnectivity vs. healthy controls. Instead, shows 13 consistent ALPHA-band enhancement edges concentrated in bilateral cerebellar internal connections, cerebello-thalamic pathways, and hippocampal-superior parietal circuits. This suggests COMPENSATORY reorganization rather than degeneration.",
-        "cross_scale_coupling": "Energy-entropy–ventral striatum–thalamus association: peripheral autonomic complexity (AttentionEntropy, MAE_1) correlates with enhanced ventral striatum–thalamus connectivity, suggesting reward-motivation circuit compensation for mild peripheral autonomic changes.",
-        "clinical_implication": "Likely represents an early or compensatory stage of insomnia pathophysiology. Protective mechanisms (enhanced autonomic complexity and cerebellar-subcortical connectivity) are maintaining relatively intact daytime function. May benefit from non-pharmacological interventions targeting sleep hygiene and circadian stabilization."
+        "tagline": "早期代偿性失眠",
+        "autonomic_summary": "自主神经复杂性相对保留，多尺度熵（MAE_1）升高，MeanNN增加，表明维持了调节灵活性以及较慢时间尺度的适应过程。",
+        "symptom_description": "年龄分布最年轻，临床症状负担相对较轻。PSQI和ISI可能轻度升高。焦虑-抑郁评分（SAS、SDS）通常低于其他聚类。日间疲劳（FSS）为中等程度。",
+        "network_signature": "与健康对照组相比，无广泛病理性低连接。相反，显示出13条一致的ALPHA频带增强连接，集中在双侧小脑内部连接、小脑-丘脑通路以及海马-顶上小叶回路。这表明是代偿性重组而非退行性改变。",
+        "cross_scale_coupling": "能量熵-腹侧纹状体-丘脑关联：外周自主神经复杂性（AttentionEntropy, MAE_1）与腹侧纹状体-丘脑连接增强相关，提示奖赏-动机回路对轻度外周自主神经变化的代偿作用。",
+        "clinical_implication": "可能代表失眠病理生理学的早期或代偿阶段。保护性机制（增强的自主神经复杂性和小脑-皮层下连接）维持了相对完整的日间功能。可能受益于针对睡眠卫生和昼夜节律稳定的非药物干预。"
     },
     1: {
-        "tagline": "Decompensated Hyperarousal — Most Severe Endotype",
-        "autonomic_summary": "Widespread HRV suppression: decreased SDNN, RMSSD, pNN50, SD1, and AttentionEntropy. Reduced overall autonomic variability and diminished parasympathetic-related short-term fluctuations. Impaired physiological complexity indicating autonomic regulatory reserve depletion.",
-        "symptom_description": "Highest scores across all six clinical scales (PSQI, ISI, SAS, SDS, HAS, FSS all highest among clusters). Highest sedative-hypnotic medication dependency. Elevated risks of somatic symptoms: chest tightness, headache, fatigue, dry mouth, forgetfulness, irritability, palpitations.",
-        "network_signature": "Most severe central network impairment: 32 consistent REDUCTION edges in alpha band with NO enhancement edges — pure uncompensated hypoconnectivity. Extensive cerebello-thalamic decoupling, cerebello-basal ganglia impairment, cerebello-somatomotor dysfunction, and subcortical-brainstem disconnection. Cross-band (delta, alpha, beta) systematic hypoconnectivity vs. healthy controls.",
-        "cross_scale_coupling": "Long-term variability–cerebellum–thalamus association: SDANN negatively correlates with cerebellar lobule X–thalamic VPL connectivity (LOOCV R²=0.361), suggesting impaired autonomic feedback loops through the cerebello-thalamic pathway and reduced long-term heart rate variability.",
-        "clinical_implication": "Likely corresponds to the most refractory insomnia population in clinical practice — 'decompensated hyperarousal' where chronic central hyperarousal has exhausted autonomic reserves. Requires the most intensive intervention, potentially combining pharmacotherapy with neuromodulation approaches targeting the cerebello-thalamic-cortical axis."
+        "tagline": "失代偿性过度觉醒 — 最严重内型",
+        "autonomic_summary": "广泛的HRV抑制：SDNN、RMSSD、pNN50、SD1和AttentionEntropy降低。整体自主神经变异性降低，副交感相关短期波动减少。生理复杂性受损，提示自主神经调节储备耗竭。",
+        "symptom_description": "所有六个临床量表（PSQI、ISI、SAS、SDS、HAS、FSS均为聚类中最高）得分最高。镇静催眠药物依赖性最高。躯体症状风险升高：胸闷、头痛、疲劳、口干、健忘、易怒、心悸。",
+        "network_signature": "最严重的中枢网络损伤：α频带32条一致性降低连接，无增强连接——纯失代偿性低连接。广泛的小脑-丘脑解耦、小脑-基底节损伤、小脑-躯体运动功能障碍以及皮层下-脑干断连。与健康对照组相比，跨频带（δ、α、β）系统性低连接。",
+        "cross_scale_coupling": "长期变异性-小脑-丘脑关联：SDANN与小脑小叶X-丘脑VPL连接呈负相关（LOOCV R²=0.361），提示通过小脑-丘脑通路的自主神经反馈环路受损，心率长期变异性降低。",
+        "clinical_implication": "可能对应临床实践中最难治的失眠人群——'失代偿性过度觉醒'，即慢性中枢过度觉醒已耗竭自主神经储备。需要最密集的干预，可能需将药物治疗与针对小脑-丘脑-皮层轴的神经营养调节方法相结合。"
     },
     2: {
-        "tagline": "Hyperreactive Autonomic Endotype",
-        "autonomic_summary": "Distinct 'high reactivity, high dispersion' pattern: elevated RMSSD, pNN50, SD1, SD2, SD1/SD2, C2d, and multiple information entropy indices synchronously. This represents abnormally expanded beat-to-beat fluctuation amplitude and decreased autonomic stability — upregulated response gain rather than enhanced regulatory capacity.",
-        "symptom_description": "Intermediate clinical severity across scales. Most distinctive phenotypic feature: oily facial skin (likely sympathetic-sebaceous axis hyperactivity). PSQI, ISI, SAS, SDS moderately elevated. HAS (hyperarousal) notably elevated.",
-        "network_signature": "'Local reorganization, global preservation': no significant whole-brain network differences vs. healthy controls. One stable enhancement edge: right cerebellar lobule VI–left superior parietal lobule (cerebello-dorsal attention network interface), suggesting attention control system dysregulation.",
-        "cross_scale_coupling": "Complexity–striatum–cerebellar association: Approximate Entropy shows strongest predictive relationship with cerebellar lobule X–putamen connectivity (LOOCV R²=0.523, best in cohort), suggesting basal ganglia–cerebellar circuit-mediated arousal maintenance abnormalities. RMSSD correlates with cerebellar Crus 2–orbitofrontal connectivity.",
-        "clinical_implication": "Peripheral autonomic hyper-reactivity may represent the projection of persistent central threat-monitoring system activation. The sympathetic-sebaceous axis phenotype is unique. Intervention targeting sympathetic hyperactivity (e.g., relaxation training, heart rate variability biofeedback) may be particularly beneficial."
+        "tagline": "高反应性自主神经内型",
+        "autonomic_summary": "独特的'高反应性、高离散度'模式：RMSSD、pNN50、SD1、SD2、SD1/SD2、C2d及多个信息熵指标同步升高。这代表心跳间期波动幅度异常扩大，自主神经稳定性降低——表现为反应增益上调而非调节能力增强。",
+        "symptom_description": "临床严重程度居中。表型特征：面部皮肤油腻（可能为交感-皮脂腺轴过度活跃）。PSQI、ISI、SAS、SDS中度升高。HAS（过度觉醒）显著升高。",
+        "network_signature": "'局部重组，整体保留'：与健康对照组相比无显著全脑网络差异。一条稳定增强连接：右侧小脑小叶VI-左侧顶上小叶（小脑-背侧注意网络界面），提示注意控制系统失调。",
+        "cross_scale_coupling": "复杂性-纹状体-小脑关联：近似熵与右侧小脑小叶X-壳核连接呈现预测关系，提示基底节-小脑回路介导的觉醒维持异常。RMSSD与小脑Crus 2-眶额叶连接相关。",
+        "clinical_implication": "外周自主神经过度反应可能代表持续性中枢威胁监测系统激活的外周投射。交感-皮脂腺轴表型独特。针对交感神经过度活跃的干预（如放松训练、心率变异性生物反馈）可能有效。"
     },
     3: {
-        "tagline": "Age-Related Autonomic Decline Endotype",
-        "autonomic_summary": "Lowest HRV phenotype across time-domain, frequency-domain, and nonlinear indices, likely reflecting age-related autonomic regulatory decline superimposed on insomnia pathology. Natural aging of sleep homeostasis and circadian rhythm systems contributes to the peripheral phenotype.",
-        "symptom_description": "Oldest patient group with mildest subjective symptom burden. ISI, PSQI, HAS, SDS significantly but modestly elevated relative to healthy controls. FSS (fatigue) relatively low. Lower hyperarousal scores (HAS) compared to Cluster 1 and 2.",
-        "network_signature": "'Peripheral low deviation, central integration preserved': no significant whole-brain network differences vs. healthy controls. One consistent enhancement edge: left cerebellar Crus I–Crus II internal connectivity — local functional reorganization within the posterior cerebellar cognitive-emotion processing network, confined to cerebellum without cross-regional extension.",
-        "cross_scale_coupling": "Nonlinear dynamics–globus pallidus–cerebellar association: BubbleEntropy correlates with bilateral pallidum–cerebellar connectivity. ISI positively correlates with cerebellar lobule X–thalamic VPL connectivity, suggesting that subjective insomnia severity in elderly patients may relate to somatosensory processing pathway function — abnormal somatosensory integration (e.g., physical discomfort hypersensitivity) may be an important source of subjective distress.",
-        "clinical_implication": "Phenotype may be primarily driven by age-related sleep architecture changes and natural autonomic decline rather than strong pathological hyperarousal. Clinical assessment should carefully distinguish pathological autonomic changes from physiological aging. Interventions should prioritize age-appropriate approaches (e.g., cognitive behavioral therapy for insomnia, light therapy) over aggressive pharmacological sedation."
+        "tagline": "外周低偏差 — 中枢整合保留",
+        "autonomic_summary": "时域、频域和非线性指标均为最低HRV表型，可能反映年龄相关的自主神经调节衰退叠加在失眠病理上。睡眠稳态和昼夜节律系统的自然老化促成了外周表型。",
+        "symptom_description": "最年长患者组，主观症状负担最轻。ISI、PSQI、HAS、SDS显著但适度升高（相对于健康对照组）。FSS（疲劳）相对较低。与Cluster 1和2相比，过度觉醒评分（HAS）较低。",
+        "network_signature": "'外周低偏差，中枢整合保留'：与健康对照组相比无显著全脑网络差异。一条一致性增强连接：左侧小脑Crus I-Crus II内部连接——后部小脑认知-情绪处理网络内的局部功能重组，局限于小脑，无跨区域扩展。",
+        "cross_scale_coupling": "非线性动力学-苍白球-小脑关联：BubbleEntropy与双侧苍白球-小脑连接相关。ISI与小脑小叶X-丘脑VPL连接呈正相关，提示老年患者的主观失眠严重程度可能与躯体感觉处理通路功能有关——异常的躯体感觉整合（如身体不适超敏反应）可能是主观痛苦的重要来源。",
+        "clinical_implication": "表型可能主要由自主神经衰退驱动，而非强烈的病理性过度觉醒。临床评估应谨慎区分病理性自主神经变化与生理性衰老。干预应优先考虑适龄方法（如失眠认知行为疗法、光疗），而非积极的药物镇静。"
     }
 }
 
@@ -270,60 +270,9 @@ if uploaded_file is not None:
             </div>
             """, unsafe_allow_html=True)
         
-        # ==================== NEW: Multi-Dimensional Profile Panel ====================
-        profile = CLUSTER_PROFILES[pred_label]
-        
-        st.markdown("---")
-        st.markdown("#### 🧬 Multi-Dimensional Patient Profile")
-        
-        # Tagline badge
-        st.markdown(f'<div class="tagline-badge">{profile["tagline"]}</div>', unsafe_allow_html=True)
-        
-        # --- Autonomic Features ---
-        st.markdown(f"""
-        <div class="profile-box">
-            <div class="profile-section-title">🫀 Autonomic Nervous System Features</div>
-            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["autonomic_summary"]}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # --- Symptom Description ---
-        st.markdown(f"""
-        <div class="profile-box">
-            <div class="profile-section-title">📝 Symptom & Clinical Phenotype</div>
-            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["symptom_description"]}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # --- Network Signature ---
-        st.markdown(f"""
-        <div class="profile-box">
-            <div class="profile-section-title">🧠 EEG Functional Connectivity Signature</div>
-            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["network_signature"]}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # --- Cross-Scale Coupling ---
-        st.markdown(f"""
-        <div class="profile-box">
-            <div class="profile-section-title">🔗 Cross-Scale Brain-Heart Coupling</div>
-            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["cross_scale_coupling"]}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # --- Clinical Implication ---
-        st.markdown(f"""
-        <div class="profile-box" style="border-left-color: #388e3c;">
-            <div class="profile-section-title" style="color: #2e7d32;">💡 Clinical Interpretation & Guidance</div>
-            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["clinical_implication"]}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # ==================== End of Profile Panel ====================
-        
         st.markdown("---")
         
-        # Second Row: SHAP (Left) + Data Drift (Right)
+        # ===== SHAP (Left) + Data Drift (Right) =====
         c_shap, c_drift = st.columns(2)
         
         with c_shap:
@@ -390,6 +339,57 @@ if uploaded_file is not None:
                     st.success("✅ Distribution normal")
             else:
                 st.info("No training stats")
+        
+        # ==================== NEW: Subgroup Population Characteristics (Moved to bottom) ====================
+        st.markdown("---")
+        st.markdown("#### 🧬 Subgroup Population Characteristics")
+        
+        profile = CLUSTER_PROFILES[pred_label]
+        
+        # Tagline badge
+        st.markdown(f'<div class="tagline-badge">{profile["tagline"]}</div>', unsafe_allow_html=True)
+        
+        # --- Autonomic Features ---
+        st.markdown(f"""
+        <div class="profile-box">
+            <div class="profile-section-title">🫀 Autonomic Nervous System Features</div>
+            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["autonomic_summary"]}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # --- Symptom Description ---
+        st.markdown(f"""
+        <div class="profile-box">
+            <div class="profile-section-title">📝 Symptom & Clinical Phenotype</div>
+            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["symptom_description"]}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # --- Network Signature ---
+        st.markdown(f"""
+        <div class="profile-box">
+            <div class="profile-section-title">🧠 EEG Functional Connectivity Signature</div>
+            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["network_signature"]}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # --- Cross-Scale Coupling ---
+        st.markdown(f"""
+        <div class="profile-box">
+            <div class="profile-section-title">🔗 Cross-Scale Brain-Heart Coupling</div>
+            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["cross_scale_coupling"]}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # --- Clinical Implication ---
+        st.markdown(f"""
+        <div class="profile-box" style="border-left-color: #388e3c;">
+            <div class="profile-section-title" style="color: #2e7d32;">💡 Clinical Interpretation & Guidance</div>
+            <div style="font-size: 13px; line-height: 1.6; color: #333;">{profile["clinical_implication"]}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # ==================== End of Profile Panel ====================
 
     # -------------------- Lower Detail Table (Drift Only) --------------------
     st.markdown("---")
@@ -429,7 +429,7 @@ if uploaded_file is not None:
             mime="text/csv"
         )
     
-    # ==================== NEW: Footer Disclaimer ====================
+    # ==================== Footer Disclaimer ====================
     st.markdown("---")
     st.markdown(f"""
     <div class="disclaimer-box">
@@ -451,7 +451,7 @@ else:
     """
     )
     
-    # ==================== NEW: Disclaimer on empty state ====================
+    # ==================== Disclaimer on empty state ====================
     st.markdown("---")
     st.markdown(f"""
     <div class="disclaimer-box">
